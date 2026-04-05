@@ -1,0 +1,40 @@
+services:
+  devcontainer:
+    image: gariskode/php:8.4-node24
+    platform: linux/amd64
+    volumes:
+      - ..:/var/www/html:cached
+      - ../.devcontainer/php/custom.ini:/usr/local/etc/php/conf.d/99-custom.ini
+    command: sleep infinity
+    depends_on:
+      - mysql
+  frankenphp:
+    image: gariskode/php:8.4-franken-node24-alpine3.23.2
+    platform: linux/amd64
+    volumes:
+      - ..:/app
+      - ../.devcontainer/php/custom.ini:/usr/local/etc/php/conf.d/99-custom.ini
+    environment:
+      - SERVER_NAME=:80
+    depends_on:
+      - mysql
+  mysql:
+    image: mysql:8.4
+    platform: linux/amd64
+    volumes:
+      - mysql-data:/var/lib/mysql
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-test}
+      MYSQL_USER: ${MYSQL_USER:-test}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-test}
+  phpmyadmin:
+    image: phpmyadmin:5.2
+    platform: linux/amd64
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+    depends_on:
+      - mysql
+volumes:
+  mysql-data:
