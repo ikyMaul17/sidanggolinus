@@ -468,7 +468,7 @@ class SupirHomeController extends Controller
             ->where('status', 'aktif')
             ->orderBy('nama', 'asc')
             ->get();
-       $alreadyChecked = $this->hasCompletedDailyInspection($id, Auth::id());
+       $alreadyChecked = $this->hasCompletedDailyInspection($id);
 
        return view('page_supir.cek_harian_bus', compact('bus', 'items', 'alreadyChecked'));
     }
@@ -481,7 +481,7 @@ class SupirHomeController extends Controller
             'items.*.status' => 'required|in:1,2',
         ]);
 
-        if ($this->hasCompletedDailyInspection($request->bus_id, Auth::id())) {
+        if ($this->hasCompletedDailyInspection($request->bus_id)) {
             return redirect()->back()->with('error', 'Pengecekan hari ini sudah disubmit.');
         }
 
@@ -543,6 +543,7 @@ class SupirHomeController extends Controller
     public function umpan_balik_supir()
     {
         $bus = Bus::find(Auth::user()->id_bus);
+        $hasCompletedDailyInspection = $this->hasCompletedDailyInspection(Auth::user()->id_bus);
 
         $pertanyaanSafety = collect();
         $pertanyaanOperational = collect();
@@ -550,6 +551,7 @@ class SupirHomeController extends Controller
 
         return view('page_supir.umpan_balik_supir', compact(
             'bus',
+            'hasCompletedDailyInspection',
             'pertanyaanSafety',
             'pertanyaanOperational',
             'pertanyaanComfort'
@@ -564,6 +566,12 @@ class SupirHomeController extends Controller
 
         if ((int) $request->input('bus_id') !== (int) Auth::user()->id_bus) {
             abort(403);
+        }
+
+        if (! $this->hasCompletedDailyInspection(Auth::user()->id_bus)) {
+            return response()->json([
+                'message' => 'Keluhan Layanan tidak dapat diakses karena Cek Rutin Harian bus ini belum selesai.',
+            ], 403);
         }
 
         $laporan = Laporan::where('id_bus', $request->input('bus_id'))
@@ -613,15 +621,22 @@ class SupirHomeController extends Controller
             ->where('status', 'aktif')
             ->orderBy('nama', 'asc')
             ->get();
-        $alreadyChecked = $this->hasCompletedDailyInspection($id, Auth::id());
+        $alreadyChecked = $this->hasCompletedDailyInspection($id);
+        $hasCompletedDailyInspection = $alreadyChecked;
 
         $activeTab = $request->query('tab', 'cek_harian');
 
-        return view('page_supir.list_umpan_balik_supir', compact('answers', 'bus', 'items', 'alreadyChecked', 'activeTab'));
+        return view('page_supir.list_umpan_balik_supir', compact('answers', 'bus', 'items', 'alreadyChecked', 'activeTab', 'hasCompletedDailyInspection'));
     }
 
     public function store_umpan_balik_supir(Request $request)
     {
+        if (! $this->hasCompletedDailyInspection(Auth::user()->id_bus)) {
+            return redirect()->route('umpan_balik_supir')
+                ->withInput()
+                ->with('error', 'Keluhan Layanan tidak dapat dikirim karena Cek Rutin Harian bus ini belum selesai.');
+        }
+
         $request->validate([
             'bus_id' => 'required|exists:bus,id',
             'jawaban' => 'required|array',
@@ -694,15 +709,14 @@ class SupirHomeController extends Controller
         return view('page_supir.detail_umpan_balik_supir', compact('laporan'));
     }
 
-    private function hasCompletedDailyInspection($busId, $supirId)
+    private function hasCompletedDailyInspection($busId)
     {
-        if (!$busId || !$supirId) {
+        if (!$busId) {
             return false;
         }
 
         return DB::table('daily_inspections')
             ->where('id_bus', $busId)
-            ->where('id_supir', $supirId)
             ->whereDate('inspected_at', Carbon::today())
             ->exists();
     }
@@ -721,6 +735,6 @@ class SupirHomeController extends Controller
             return false;
         }
 
-        return !$this->hasCompletedDailyInspection($busId, $supirId);
+        return !$this->hasCompletedDailyInspection($busId);
     }
 }

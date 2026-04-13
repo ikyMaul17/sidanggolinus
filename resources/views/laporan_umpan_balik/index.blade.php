@@ -270,16 +270,29 @@
 
     <!-- Main Table -->
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 class="mb-0">Daftar Laporan</h5>
-            <span class="badge bg-primary">Total: {{ $laporan->total() }} data</span>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" id="btnBulkDelete" class="btn btn-danger btn-sm" disabled>
+                    <i class="bx bx-trash"></i> Hapus Terpilih
+                </button>
+                <span class="badge bg-primary">Total: {{ $laporan->total() }} data</span>
+            </div>
         </div>
 
         <div class="card-body">
+            <form id="bulkDeleteForm" action="{{ route('bulk_delete_laporan_umpan_balik') }}" method="POST" class="d-none">
+                @csrf
+                <div id="bulkDeleteInputs"></div>
+            </form>
+
             <div class="table-responsive">
                 <table class="table table-hover compact-table">
                     <thead>
                         <tr>
+                            <th width="40" class="text-center">
+                                <input type="checkbox" id="selectAllLaporan" class="form-check-input">
+                            </th>
                             <th width="50">#</th>
                             <th width="100">Tanggal</th>
                             <th>Bus</th>
@@ -295,6 +308,9 @@
                     <tbody>
                         @forelse($laporan as $item)
                             <tr>
+                                <td class="text-center">
+                                    <input type="checkbox" class="form-check-input laporan-checkbox" value="{{ $item->id }}">
+                                </td>
                                 <td class="fw-semibold">
                                     {{ $loop->iteration + $laporan->perPage() * ($laporan->currentPage() - 1) }}</td>
                                 <td>
@@ -412,7 +428,7 @@
                             </div>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center py-4">
+                                <td colspan="11" class="text-center py-4">
                                     <i class="bx bx-inbox fs-1 text-muted mb-2 d-block"></i>
                                     <p class="text-muted">Belum ada data laporan</p>
                                 </td>
@@ -441,10 +457,65 @@
 @section('script')
     <script>
         $(document).ready(function() {
+            const selectAll = $('#selectAllLaporan');
+            const checkboxes = $('.laporan-checkbox');
+            const bulkDeleteButton = $('#btnBulkDelete');
+            const bulkDeleteForm = $('#bulkDeleteForm');
+            const bulkDeleteInputs = $('#bulkDeleteInputs');
+
+            function updateBulkDeleteState() {
+                const checkedCount = $('.laporan-checkbox:checked').length;
+                bulkDeleteButton.prop('disabled', checkedCount === 0);
+                bulkDeleteButton.html('<i class="bx bx-trash"></i> Hapus Terpilih' + (checkedCount > 0 ? ` (${checkedCount})` : ''));
+
+                if (checkboxes.length > 0) {
+                    selectAll.prop('checked', checkedCount === checkboxes.length);
+                    selectAll.prop('indeterminate', checkedCount > 0 && checkedCount < checkboxes.length);
+                }
+            }
+
             // Auto-close alerts after 5 seconds
             setTimeout(function() {
                 $('.alert').alert('close');
             }, 5000);
+
+            selectAll.on('change', function() {
+                checkboxes.prop('checked', $(this).is(':checked'));
+                updateBulkDeleteState();
+            });
+
+            checkboxes.on('change', function() {
+                updateBulkDeleteState();
+            });
+
+            bulkDeleteButton.on('click', function() {
+                const selectedIds = $('.laporan-checkbox:checked').map(function() {
+                    return $(this).val();
+                }).get();
+
+                if (selectedIds.length === 0) {
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Apakah Anda yakin?',
+                    text: `Sebanyak ${selectedIds.length} laporan yang dipilih akan dihapus dan tidak dapat dikembalikan!`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Ya, hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        bulkDeleteInputs.empty();
+                        selectedIds.forEach(function(id) {
+                            bulkDeleteInputs.append(`<input type="hidden" name="laporan_ids[]" value="${id}">`);
+                        });
+                        bulkDeleteForm.trigger('submit');
+                    }
+                });
+            });
 
             // Delete confirmation
             $('.btn-delete').on('click', function() {
@@ -464,6 +535,8 @@
                     }
                 });
             });
+
+            updateBulkDeleteState();
         });
     </script>
 

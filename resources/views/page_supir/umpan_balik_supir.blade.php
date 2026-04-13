@@ -183,6 +183,16 @@
         </div>
     @endif
 
+    @if(! $hasCompletedDailyInspection)
+        <div class="alert alert-warning d-flex align-items-start gap-2" role="alert">
+            <i class="fas fa-exclamation-triangle mt-1"></i>
+            <div>
+                <strong>Keluhan Layanan terkunci.</strong><br>
+                Fitur ini tidak dapat diakses karena Cek Rutin Harian belum selesai. Silakan selesaikan Cek Rutin Harian terlebih dahulu.
+            </div>
+        </div>
+    @endif
+
     <form action="{{ route('store_umpan_balik_supir') }}" method="POST" id="feedbackForm">
         @csrf
 
@@ -208,9 +218,14 @@
         </div>
 
         <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-primary" {{ ! $hasCompletedDailyInspection ? 'disabled' : '' }}>
                 <i class="fas fa-paper-plane me-2"></i>Kirim Keluhan
             </button>
+            @if(! $hasCompletedDailyInspection)
+                <a href="{{ route('cek_harian_bus') }}" class="btn btn-warning">
+                    <i class="fas fa-clipboard-check me-2"></i>Selesaikan Cek Rutin Harian
+                </a>
+            @endif
             <a href="{{ route('home_supir') }}" class="btn btn-outline-secondary">
                 <i class="fas fa-arrow-left me-2"></i>Kembali ke Beranda
             </a>
@@ -222,6 +237,7 @@
 @section('script')
 <script>
     const questionEndpoint = "{{ route('pertanyaan_by_bus_supir') }}";
+    const hasCompletedDailyInspection = @json($hasCompletedDailyInspection);
     const ratingLabels = {
         1: 'Sangat Baik',
         2: 'Baik',
@@ -368,6 +384,17 @@
     }
 
     document.getElementById('feedbackForm').addEventListener('submit', function(e) {
+        if (!hasCompletedDailyInspection) {
+            e.preventDefault();
+            Swal.fire({
+                title: 'Fitur Terkunci!',
+                text: 'Keluhan Layanan tidak dapat diakses karena Cek Rutin Harian belum selesai.',
+                icon: 'warning',
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
+
         const busInput = document.getElementById('bus_id');
         if (!busInput.value) {
             e.preventDefault();
@@ -450,6 +477,17 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         const busInput = document.getElementById('bus_id');
+        const placeholder = document.getElementById('questionsPlaceholder');
+
+        if (!hasCompletedDailyInspection) {
+            if (placeholder) {
+                placeholder.textContent = 'Keluhan Layanan tidak dapat diakses karena Cek Rutin Harian belum selesai.';
+                placeholder.classList.remove('alert-info');
+                placeholder.classList.add('alert-warning');
+            }
+            return;
+        }
+
         if (busInput && busInput.value) {
             fetch(`${questionEndpoint}?bus_id=${encodeURIComponent(busInput.value)}`, {
                 headers: {

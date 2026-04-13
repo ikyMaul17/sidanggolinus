@@ -29,6 +29,8 @@ class LaporanUmpanBalikController extends Controller
             ->when($request->filled('target'), function ($query) use ($request) {
                 return $query->where('target', $request->target);
             })
+            ->orderByRaw('CASE WHEN nilai_fuzzy IS NULL THEN 1 ELSE 0 END')
+            ->orderBy('nilai_fuzzy', 'desc')
             ->orderBy('created_at', 'desc')
             ->paginate(15);
 
@@ -69,6 +71,22 @@ class LaporanUmpanBalikController extends Controller
             ]);
 
         return redirect()->back()->with('success', 'Status laporan berhasil diperbarui!');
+    }
+
+    /**
+     * Hapus beberapa laporan sekaligus
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'laporan_ids' => 'required|array|min:1',
+            'laporan_ids.*' => 'required|integer|exists:laporan,id',
+        ]);
+
+        $deletedCount = Laporan::whereIn('id', $validated['laporan_ids'])->delete();
+
+        return redirect()->route('laporan_umpan_balik')
+            ->with('success', $deletedCount . ' laporan berhasil dihapus!');
     }
 
     /**

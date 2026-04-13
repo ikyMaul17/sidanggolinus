@@ -80,7 +80,7 @@
     @endif
     @if($alreadyChecked)
         <div class="alert alert-info alert-dismissible fade show" role="alert">
-            Pengecekan harian hari ini sudah disubmit.
+            Cek Rutin Harian untuk bus ini sudah diselesaikan oleh supir pertama hari ini. Supir berikutnya tidak perlu mengisi lagi dan bisa langsung mengakses Keluhan Layanan.
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif

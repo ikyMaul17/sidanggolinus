@@ -300,13 +300,29 @@
             <div class="card">
                 <div class="card-header card-header-sm d-flex justify-content-between align-items-center py-2">
                     <h6 class="mb-0">Daftar Laporan</h6>
-                    <a href="{{ route('umpan_balik_supir') }}" class="btn btn-primary btn-sm py-1">
-                        <i class="fas fa-plus me-1 small"></i>
-                        <span class="small">Buat Baru</span>
-                    </a>
+                    @if($hasCompletedDailyInspection)
+                        <a href="{{ route('umpan_balik_supir') }}" class="btn btn-primary btn-sm py-1">
+                            <i class="fas fa-plus me-1 small"></i>
+                            <span class="small">Buat Baru</span>
+                        </a>
+                    @else
+                        <button type="button" class="btn btn-secondary btn-sm py-1" disabled>
+                            <i class="fas fa-lock me-1 small"></i>
+                            <span class="small">Buat Baru</span>
+                        </button>
+                    @endif
                 </div>
 
                 <div class="card-body p-2">
+                    @if(! $hasCompletedDailyInspection)
+                        <div class="alert alert-warning d-flex align-items-start gap-2 mx-2 mt-2 mb-3" role="alert">
+                            <i class="fas fa-exclamation-triangle mt-1"></i>
+                            <div>
+                                <strong>Keluhan Layanan terkunci.</strong><br>
+                                Fitur ini tidak dapat diakses karena Cek Rutin Harian belum selesai. Silakan selesaikan Cek Rutin Harian terlebih dahulu.
+                            </div>
+                        </div>
+                    @endif
                     @if($answers->count() > 0)
                     <div class="table-responsive">
                         <table class="table table-hover compact-table mb-0">
@@ -380,10 +396,17 @@
                     <div class="empty-state text-center">
                         <i class="fas fa-inbox text-muted mb-3"></i>
                         <p class="text-muted mb-3">Belum ada riwayat keluhan</p>
-                        <a href="{{ route('umpan_balik_supir') }}" class="btn btn-primary btn-sm">
-                            <i class="fas fa-plus me-1"></i>
-                            Buat Keluhan Pertama
-                        </a>
+                        @if($hasCompletedDailyInspection)
+                            <a href="{{ route('umpan_balik_supir') }}" class="btn btn-primary btn-sm">
+                                <i class="fas fa-plus me-1"></i>
+                                Buat Keluhan Pertama
+                            </a>
+                        @else
+                            <button type="button" class="btn btn-secondary btn-sm" disabled>
+                                <i class="fas fa-lock me-1"></i>
+                                Buat Keluhan Pertama
+                            </button>
+                        @endif
                     </div>
                     @endif
                 </div>

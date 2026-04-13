@@ -157,6 +157,7 @@ Route::middleware([RedirectToLoginByRole::class . ':admin'])->group(function () 
     Route::get('/laporan_umpan_balik', [App\Http\Controllers\LaporanUmpanBalikController::class, 'index'])->name('laporan_umpan_balik');
     Route::get('/detail_laporan_umpan_balik/{id}', [App\Http\Controllers\LaporanUmpanBalikController::class, 'show'])->name('detail_laporan_umpan_balik');
     Route::post('/update_laporan_umpan_balik/{id}', [App\Http\Controllers\LaporanUmpanBalikController::class, 'updateStatus'])->name('update_laporan_umpan_balik');
+    Route::post('/bulk_delete_laporan_umpan_balik', [App\Http\Controllers\LaporanUmpanBalikController::class, 'bulkDestroy'])->name('bulk_delete_laporan_umpan_balik');
     Route::get('/delete_laporan_umpan_balik/{id}', [App\Http\Controllers\LaporanUmpanBalikController::class, 'destroy'])->name('delete_laporan_umpan_balik');
 
 });
